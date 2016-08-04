@@ -48,6 +48,7 @@ docker run -d \
 docker run -d \
   --name nextcloud-server \
   --link nextcloud-database:mysql \
+  -e WEB_INSTALL=false \
   -e DATABASE_ROOT_PASSWORD=Chang3m3t0an0th3r \
   -e EXTERNAL_URL=nextcloud.example.com \
   -e ENABLE_SSL=true \
@@ -96,6 +97,7 @@ The default username & password login will be *admin* and *password*, unless if 
           - /opt/letsencrypt/letsencrypt-data/etc/letsencrypt/live/nextcloud.example.com/privkey.pem:/etc/ssl/private/ssl-cert-snakeoil.key:ro
         environment:
           - "TZ=America/Chicago"
+          - "WEB_INSTALL=false"
           - "DATABASE_ROOT_PASSWORD=Chang3m3t0an0th3r"
           - "EXTERNAL_URL=nextcloud.example.com"
           - "ENABLE_SSL=true"
