@@ -21,7 +21,7 @@
 - **NEXTCLOUD_HOME** : Path to nextcloud directory *(default: /var/www/html)*
 - **NEXTCLOUD_DATA** : Path to data directory *(default: $NEXTCLOUD_HOME/data)*
 - **EXTERNAL_URL** : nextcloud hostname/url to add to your trusted domains list that users can log into *(default: "")*
-- **ENABLE_SSL** : Enable SSL/HTTPS/STS (You need to set **EXTERNAL_URL** too) *(default: false)*
+- **ENABLE_SSL** : Enable SSL/HTTPS (You need to set **EXTERNAL_URL** too) *(default: false)*
 - **MEMCACHE** :  false
 
 ## Port
