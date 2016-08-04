@@ -1,10 +1,11 @@
-FROM php:7-apache
+FROM php:5.6-apache
 MAINTAINER Jeffery Bagirimvano <jeffery.rukundo@gmail.com>
 
 # Using Installing Nextcloud From the Command Line
 # https://docs.nextcloud.com/server/9/admin_manual/installation/command_line_installation.html
 
 # nextcloud directory
+ENV WEB_INSTALL true
 ENV DATABASE mysql
 ENV DATABASE_NAME nextcloud
 ENV DATABASE_HOST mysql
@@ -17,26 +18,56 @@ ENV NEXTCLOUD_HOME /var/www/html
 ENV NEXTCLOUD_DATA $NEXTCLOUD_HOME/data
 ENV EXTERNAL_URL=""
 ENV ENABLE_SSL false
+ENV MEMCACHE false
+
 
 RUN \
   apt-get update && \
   apt-get install -y \
+    libbz2-dev \
+    bzip2 \
+  	libcurl4-openssl-dev \
+  	libfreetype6-dev \
+  	libicu-dev \
+  	libjpeg-dev \
+  	libldap2-dev \
+  	libmcrypt-dev \
+  	libmemcached-dev \
+  	libpng12-dev \
+  	libpq-dev \
+  	libxml2-dev \
     netcat \
     sudo \
     curl \
     w3m \
-    unzip \
-    libpng12-dev \
-    libjpeg-dev \
-    libbz2-dev \
-    libmcrypt-dev \
-    libicu-dev \
-    && \
-  # Install some more modules
-  docker-php-ext-install zip gd pdo_mysql exif bz2 opcache pcntl mcrypt intl && \
-  # Get nextcloud version
-  NEXTCLOUD_VERSION=$(w3m https://nextcloud.com/install/#instructions-server -dump | grep -m 1 "Latest stable version" | sed 's/Latest stable version: //') && \
-  # get the files
+    unzip
+
+# https://docs.nextcloud.com/server/9/admin_manual/installation/source_installation.html#prerequisites
+RUN docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
+	&& docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ \
+	&& docker-php-ext-install exif gd intl ldap mbstring mcrypt mysql opcache pdo_mysql pdo_pgsql pgsql zip bz2
+
+# set recommended PHP.ini settings
+# see https://secure.php.net/manual/en/opcache.installation.php
+RUN { \
+		echo 'opcache.memory_consumption=128'; \
+		echo 'opcache.interned_strings_buffer=8'; \
+		echo 'opcache.max_accelerated_files=4000'; \
+		echo 'opcache.revalidate_freq=60'; \
+		echo 'opcache.fast_shutdown=1'; \
+		echo 'opcache.enable_cli=1'; \
+	} > /usr/local/etc/php/conf.d/opcache-recommended.ini
+RUN a2enmod rewrite && a2enmod headers
+
+# PECL extensions
+RUN set -ex \
+	&& pecl install APCu-4.0.10 \
+	&& pecl install memcached-2.2.0 \
+	&& pecl install redis-2.2.8 \
+	&& docker-php-ext-enable apcu memcached redis
+
+# Get nextcloud version
+RUN NEXTCLOUD_VERSION=$(w3m https://nextcloud.com/install/#instructions-server -dump | grep -m 1 "Latest stable version" | sed 's/Latest stable version: //') && \
   mkdir /root/setup && \
   cd /root/setup && \
   curl -O https://download.nextcloud.com/server/releases/nextcloud-${NEXTCLOUD_VERSION}.zip && \
@@ -52,12 +83,11 @@ RUN \
   rm -fr $NEXTCLOUD_HOME && \
   cp -r nextcloud $NEXTCLOUD_HOME && \
   chown -R www-data:www-data $NEXTCLOUD_HOME && \
-  a2enmod rewrite && \
-  a2enmod headers && \
-  cd && rm -fr /root/setup && \
+  cd && rm -fr /root/setup
 
-# Setting Strong Directory Permissions
-echo "#!/bin/bash \n\
+# set recommended Strong Directory Permissions settings
+# see https://docs.nextcloud.com/server/9/admin_manual/installation/installation_wizard.html#setting-strong-directory-permissions
+RUN echo "#!/bin/bash \n\
 ncpath='/var/www/html' \n\
 htuser='www-data' \n\
 htgroup='www-data' \n\
@@ -103,29 +133,38 @@ VOLUME ${NEXTCLOUD_DATA} $NEXTCLOUD_HOME/config
 
 CMD \
   nextcloud_permissions && \
-  service apache2 restart && \
-  while ! nc -z "$DATABASE_HOST" 3306; do sleep 3; done && \
-  if [ ! -f "$NEXTCLOUD_HOME/config/config.php" ] ; then cd "$NEXTCLOUD_HOME" && sudo -u www-data php occ  maintenance:install \
-    --database "${DATABASE}" \
-    --database-name "${DATABASE_NAME}" \
-    --database-host "${DATABASE_HOST}" \
-    --database-user "${DATABASE_USER}" \
-    --database-pass "${DATABASE_ROOT_PASSWORD}" \
-    --database-table-prefix "${DATABASE_TABLE_PREFIX}" \
-    --admin-user "${ADMIN_USER}" \
-    --admin-pass "${ADMIN_PASS}" \
-    --data-dir "${NEXTCLOUD_DATA}"; fi && \
-  if [ $EXTERNAL_URL ] ; then grep -q -F "=> '${EXTERNAL_URL}'" $NEXTCLOUD_HOME/config/config.php || sed -i "/0 => 'localhost'/a \    1 => '${EXTERNAL_URL}'" $NEXTCLOUD_HOME/config/config.php; fi && \
+  if [ $WEB_INSTALL = false ] ; then \
+    while ! nc -z "$DATABASE_HOST" 3306; do sleep 3; done; \
+    if [ ! -f "$NEXTCLOUD_HOME/config/config.php" ] ; then cd "$NEXTCLOUD_HOME" && sudo -u www-data php occ  maintenance:install \
+      --database "${DATABASE}" \
+      --database-name "${DATABASE_NAME}" \
+      --database-host "${DATABASE_HOST}" \
+      --database-user "${DATABASE_USER}" \
+      --database-pass "${DATABASE_ROOT_PASSWORD}" \
+      --database-table-prefix "${DATABASE_TABLE_PREFIX}" \
+      --admin-user "${ADMIN_USER}" \
+      --admin-pass "${ADMIN_PASS}" \
+      --data-dir "${NEXTCLOUD_DATA}"; \
+    fi; \
+  fi && \
+  if [ -f "$NEXTCLOUD_HOME/config/config.php" ] ; then \
+    if [ $EXTERNAL_URL ] ; then grep -q -F "=> '${EXTERNAL_URL}'" $NEXTCLOUD_HOME/config/config.php || sed -i "/0 => 'localhost'/a \    1 => '${EXTERNAL_URL}'" $NEXTCLOUD_HOME/config/config.php; fi && \
+    if [ $MEMCACHE = true ] ; then grep -q -F "memcache.local" $NEXTCLOUD_HOME/config/config.php || sed -i "/'dbpassword' => /a \  'memcache.local' => '\\\OC\\\Memcache\\\APCu'," $NEXTCLOUD_HOME/config/config.php; fi; \
+  fi && \
+  # Enable SSL
   if [ $ENABLE_SSL = true ] ; then \
-    echo "<VirtualHost *:80> \n\
-   ServerName ${EXTERNAL_URL} \n\
-   Redirect permanent / https://${EXTERNAL_URL}/ \n\
-</VirtualHost>" > /etc/apache2/sites-enabled/redirect-to-ssl.conf && \
-    echo "<VirtualHost *:443> \n\
-  ServerName ${EXTERNAL_URL} \n\
-    <IfModule mod_headers.c> \n\
-      Header always set Strict-Transport-Security \"max-age=15768000; includeSubDomains; preload\" \n\
-    </IfModule> \n\
-</VirtualHost>" > /etc/apache2/sites-enabled/enable-sts.conf && \
-    a2enmod ssl && a2ensite default-ssl && service apache2 reload; fi && \
-  tail -f $NEXTCLOUD_HOME/data/owncloud.log -f /var/log/apache2/access.log -f /var/log/apache2/error.log -f /var/log/apache2/other_vhosts_access.log
+    # Redirect to HTTPS
+    DEFAULT_CONF="/etc/apache2/sites-available/000-default.conf" && \
+    grep -q -F "ServerName ${EXTERNAL_URL}" ${DEFAULT_CONF} || sed -i "/DocumentRoot \/var\/www\/html/a \        ServerName ${EXTERNAL_URL}" ${DEFAULT_CONF} && \
+    grep -q -F "Redirect permanent" ${DEFAULT_CONF} || sed -i "/ServerName ${EXTERNAL_URL}/a \        Redirect permanent \/ https:\/\/${EXTERNAL_URL}\/" ${DEFAULT_CONF} && \
+
+    # DEFAULT_SSL="/etc/apache2/sites-available/default-ssl.conf" && \
+    # grep -q -F "ServerName ${EXTERNAL_URL}" ${DEFAULT_SSL} || sed -i "/ServerAdmin/a \                ServerName ${EXTERNAL_URL}" ${DEFAULT_SSL} && \
+    # grep -q -F "Header always set Strict-Transport-Security" ${DEFAULT_SSL} || sed -i "/ServerName ${EXTERNAL_URL}/a \\
+    #                 <IfModule mod_headers.c> \\
+    #                    Header always set Strict-Transport-Security \"max-age=15768000; includeSubDomains; preload\" \\
+    #                 </IfModule>" ${DEFAULT_SSL} ; \
+
+    a2enmod ssl && a2ensite default-ssl ; \
+  fi && \
+  apache2-foreground

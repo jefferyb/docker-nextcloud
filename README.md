@@ -4,13 +4,12 @@
 -	[`latest` (*Dockerfile*)](https://github.com/jefferyb/docker-nextcloud/blob/master/Dockerfile)
 
 ## Features
-- HTTPS & Strict-Transport-Security support.
-- Automatically configure with your own settings
+- HTTPS support.
+- Automatically configure with your own settings (using command line and the browser)
 - Data and config persistence.
 
 ## Environment variables
-- **UID** : nextcloud user id *(default : 991)*
-- **GID** : nextcloud group id *(default : 991)*
+- **WEB_INSTALL** : Install using the web or using the environment variables (When set to *false*, you need, at least, to set **DATABASE_ROOT_PASSWORD**, which should be the same as **MYSQL_ROOT_PASSWORD**) *(default: true)*
 - **DATABASE** :  Supported database type *(default: mysql)*
 - **DATABASE_NAME** : Name of the database *(default: nextcloud)*
 - **DATABASE_HOST** : Hostname of the database (alias name used to link containers) *(default: mysql)*
@@ -21,8 +20,9 @@
 - **ADMIN_PASS** : Password of the admin account *(default: password)*
 - **NEXTCLOUD_HOME** : Path to nextcloud directory *(default: /var/www/html)*
 - **NEXTCLOUD_DATA** : Path to data directory *(default: $NEXTCLOUD_HOME/data)*
-- **EXTERNAL_URL** : nextcloud hostname/url *(default: "")*
-- **ENABLE_SSL** : Enable SSL/HTTPS/STS *(default: false)*
+- **EXTERNAL_URL** : nextcloud hostname/url to add to your trusted domains list that users can log into *(default: "")*
+- **ENABLE_SSL** : Enable SSL/HTTPS/STS (You need to set **EXTERNAL_URL** too) *(default: false)*
+- **MEMCACHE** :  false
 
 ## Port
 - **80**.
@@ -33,7 +33,7 @@
 - **$NEXTCLOUD_HOME/config** : config.php location.
 
 ## Database (external container)
-You have to use an **external** database container. I suggest you to use [**MariaDB**](https://hub.docker.com/_/mariadb/), which is a reliable database server, and link it to the nextcloud container.
+You have to use an **external** database container. You can use [**MySQL Server**](https://hub.docker.com/r/mysql/mysql-server/) or [**MariaDB**](https://hub.docker.com/_/mariadb/), and link it to the nextcloud container.
 
 ## Setup
 In this example, it will setup owncloud with HTTPS enabled (using letsencrypt), that you can access at https://nextcloud.example.com.
@@ -43,7 +43,7 @@ docker run -d \
   --name nextcloud-database \
   -v /opt/nextcloud/nextcloud-mysql-data:/var/lib/mysql \
   -e MYSQL_ROOT_PASSWORD=Chang3m3t0an0th3r \
-  mariadb
+  mysql/mysql-server
 
 docker run -d \
   --name nextcloud-server \
@@ -101,7 +101,7 @@ The default username & password login will *admin* and *password*, unless if you
           - "ENABLE_SSL=true"
 
       nextcloud-database:
-        image: mariadb
+        image: mysql/mysql-server
         container_name: nextcloud-database
         restart: always
         volumes:
