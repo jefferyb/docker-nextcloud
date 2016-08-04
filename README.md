@@ -1,4 +1,5 @@
 ## jefferyb/nextcloud
+Built using "Installing Nextcloud From the Command Line" instructions found at https://docs.nextcloud.com/server/9/admin_manual/installation/command_line_installation.html
 
 ## Supported tags
 -	[`latest` (*Dockerfile*)](https://github.com/jefferyb/docker-nextcloud/blob/master/Dockerfile)
