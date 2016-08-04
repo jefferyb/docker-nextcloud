@@ -61,7 +61,7 @@ docker run -d \
 
 ```
 
-The default username & password login will *admin* and *password*, unless if you set *ADMIN_USER* and *ADMIN_PASS*
+The default username & password login will be *admin* and *password*, unless if you set *ADMIN_USER* and *ADMIN_PASS*
 
 **Using docker-compose file**
 
