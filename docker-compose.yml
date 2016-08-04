@@ -7,7 +7,6 @@
 # To check the logs, do:
 #   $ docker-compose logs -f
 #
-### </ Jeffery Bagirimvano - jeffery.rukundo@gmail.com >
 
 version: '2'
 
@@ -25,17 +24,18 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /opt/nextcloud/nextcloud-data/data:/var/www/html/data
       - /opt/nextcloud/nextcloud-data/config:/var/www/html/config
-      # ENABLE_SSL = true
+      # ENABLE_SSL = true --- certs location
       - /opt/letsencrypt/letsencrypt-data/etc/letsencrypt/live/nextcloud.example.com/cert.pem:/etc/ssl/certs/ssl-cert-snakeoil.pem:ro
       - /opt/letsencrypt/letsencrypt-data/etc/letsencrypt/live/nextcloud.example.com/privkey.pem:/etc/ssl/private/ssl-cert-snakeoil.key:ro
     environment:
       - "TZ=America/Chicago"
+      - "WEB_INSTALL=false"
       - "DATABASE_ROOT_PASSWORD=Chang3m3t0an0th3r"
       - "EXTERNAL_URL=nextcloud.example.com"
       - "ENABLE_SSL=true"
 
   nextcloud-database:
-    image: mariadb
+    image: mysql/mysql-server
     container_name: nextcloud-database
     restart: always
     volumes:
