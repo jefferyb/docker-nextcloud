@@ -1,3 +1,6 @@
+[![](https://images.microbadger.com/badges/version/jefferyb/nextcloud.svg)](http://microbadger.com/images/jefferyb/nextcloud "Get your own version badge on microbadger.com")
+[![](https://images.microbadger.com/badges/image/jefferyb/nextcloud.svg)](http://microbadger.com/images/jefferyb/nextcloud "Get your own image badge on microbadger.com")
+
 ## jefferyb/nextcloud
 Built using "Installing Nextcloud From the Command Line" instructions found at https://docs.nextcloud.com/server/9/admin_manual/installation/command_line_installation.html
 
