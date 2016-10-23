@@ -19,6 +19,7 @@ ENV NEXTCLOUD_DATA $NEXTCLOUD_HOME/data
 ENV EXTERNAL_URL=""
 ENV ENABLE_SSL false
 ENV MEMCACHE false
+ENV TERM=xterm
 
 
 RUN \
@@ -104,6 +105,8 @@ find \${ncpath} -type d -print0 | xargs -0 chmod 0750 \n\
  \n\
 printf \"chown Directories\n\" \n\
 chown -R \${rootuser}:\${htgroup} \${ncpath} \n\
+chown -R \${htuser}:\${htgroup} \${ncpath}/.htaccess \n\
+chown -R \${htuser}:\${htgroup} \${ncpath}/.user.ini \n\
 chown -R \${htuser}:\${htgroup} \${ncpath}/apps/ \n\
 chown -R \${htuser}:\${htgroup} \${ncpath}/assets/ \n\
 chown -R \${htuser}:\${htgroup} \${ncpath}/config/ \n\
