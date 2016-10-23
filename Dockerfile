@@ -68,7 +68,7 @@ RUN set -ex \
 	&& docker-php-ext-enable apcu memcached redis
 
 # Get nextcloud version
-RUN NEXTCLOUD_VERSION=$(w3m https://nextcloud.com/install/#instructions-server -dump | grep -m 1 "Latest stable version" | sed 's/Latest stable version: //') && \
+RUN NEXTCLOUD_VERSION=$(w3m https://nextcloud.com/install/#instructions-server -dump | grep -m 1 "Latest stable version" | sed 's/Latest stable version: //' | sed 's/.(.*//') && \
   mkdir /root/setup && \
   cd /root/setup && \
   curl -O https://download.nextcloud.com/server/releases/nextcloud-${NEXTCLOUD_VERSION}.zip && \
