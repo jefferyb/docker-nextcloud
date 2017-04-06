@@ -125,7 +125,7 @@ fi \n\
 if [ -f \${ncpath}/data/.htaccess ] \n\
  then \n\
   chmod 0644 \${ncpath}/data/.htaccess \n\
-  chown \${htgroup}:\${htgroup} /var/www/html/.htaccess \n\
+  chown \${htgroup}:\${htgroup} \${ncpath}/.htaccess \n\
   chown \${rootuser}:\${htgroup} \${ncpath}/data/.htaccess \n\
 fi \n\
 " > /usr/local/bin/nextcloud_permissions && \
