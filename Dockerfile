@@ -1,4 +1,4 @@
-FROM php:5.6-apache
+FROM php:7.1-apache
 MAINTAINER Jeffery Bagirimvano <jeffery.rukundo@gmail.com>
 
 # Using Installing Nextcloud From the Command Line
@@ -46,26 +46,30 @@ RUN \
 # https://docs.nextcloud.com/server/9/admin_manual/installation/source_installation.html#prerequisites
 RUN docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
 	&& docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ \
-	&& docker-php-ext-install exif gd intl ldap mbstring mcrypt mysql opcache pdo_mysql pdo_pgsql pgsql zip bz2
+	&& docker-php-ext-install exif gd intl ldap mbstring mcrypt mysqli opcache pdo_mysql pdo_pgsql pgsql zip bz2
+
 
 # set recommended PHP.ini settings
-# see https://secure.php.net/manual/en/opcache.installation.php
+# see https://docs.nextcloud.com/server/12/admin_manual/configuration_server/server_tuning.html#enable-php-opcache
 RUN { \
 		echo 'opcache.memory_consumption=128'; \
 		echo 'opcache.interned_strings_buffer=8'; \
-		echo 'opcache.max_accelerated_files=4000'; \
-		echo 'opcache.revalidate_freq=60'; \
+		echo 'opcache.max_accelerated_files=10000'; \
+		echo 'opcache.revalidate_freq=1'; \
 		echo 'opcache.fast_shutdown=1'; \
 		echo 'opcache.enable_cli=1'; \
+		echo 'opcache.enable=1'; \
+		echo 'opcache.save_comments=1'; \
 	} > /usr/local/etc/php/conf.d/opcache-recommended.ini
 RUN a2enmod rewrite && a2enmod headers
 
 # PECL extensions
 RUN set -ex \
-	&& pecl install APCu-4.0.10 \
-	&& pecl install memcached-2.2.0 \
-	&& pecl install redis-2.2.8 \
-	&& docker-php-ext-enable apcu memcached redis
+	&& pecl install APCu-5.1.8 \
+	&& pecl install memcached-3.0.2 \
+	&& pecl install redis-3.1.1 \
+	&& docker-php-ext-enable apcu redis memcached
+RUN a2enmod rewrite
 
 # Get nextcloud version
 RUN NEXTCLOUD_VERSION=$(w3m https://nextcloud.com/install/#instructions-server -dump | grep -m 1 "Latest stable version" | sed 's/Latest stable version: //' | sed 's/.(.*//') && \
