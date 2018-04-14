@@ -1,10 +1,6 @@
 #!/bin/sh
 set -eu
 
-# change port number to 8080
-sed -i 's/80/8080/g' /etc/apache2/ports.conf
-sed -i 's/80/8080/g' /etc/apache2/sites-enabled/000-default.conf
-
 # version_greater A B returns whether A > B
 version_greater() {
 	[ "$(printf '%s\n' "$@" | sort -t '.' -n -k1,1 -k2,2 -k3,3 -k4,4 | head -n 1)" != "$1" ]
